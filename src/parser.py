@@ -93,8 +93,7 @@ class LogParser:
 
         ## This is table with all the logs  
         # event E1-E29, ti+1 - ti, pid, level={INFO,WARNING,ERROR}, component={dfs.DataNode$PacketResponder} 
-        self.all_logs = pd.DataFrame(columns=['event', 'time_diff', 'pid', 'level', 'component'])
-        
+        self.all_logs   = pd.DataFrame(columns=['event', 'time_diff', 'pid', 'level', 'component'])
 
     # Destructor closes the file 
     def __del__(self):
@@ -176,3 +175,24 @@ class LogParser:
         # Append parsed log into the DataFrame 
         log_entry = {'event': event, 'time_diff': time_diff, 'pid': pid, 'level': level, 'component': component}
         self.all_logs = self.all_logs._append(log_entry, ignore_index=True)
+
+    # Convert out self.all_logs to ONE-HOT encoded pandas 
+    # {'event': 'E5', 'time_diff': 0, 'pid': '143', 'level': 'INFO', 'component': 'bbb'}
+    # Atributtes that are converted: 
+    #  event, pid, level, component 
+    # @return dimension of the dataset after encoding 
+    def one_hot_encoding(self):
+
+        # Find the unique values 
+        event_one_hot = pd.get_dummies(self.all_logs['event'], prefix='event')
+        pid_one_hot = pd.get_dummies(self.all_logs['pid'], prefix='pid')
+        level_one_hot = pd.get_dummies(self.all_logs['level'], prefix='level')
+        component_one_hot = pd.get_dummies(self.all_logs['component'], prefix='component')
+
+        # Do the actuall encoding  
+        df_encoded = pd.concat([self.all_logs.drop(columns=['event', 'pid', 'level', 'component']),
+                                event_one_hot, pid_one_hot, level_one_hot, component_one_hot], axis=1)
+
+        self.all_logs = df_encoded
+        return self.all_logs.shape 
+    

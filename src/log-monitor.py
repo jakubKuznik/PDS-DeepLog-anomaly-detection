@@ -88,6 +88,14 @@ def main():
     
     print(log_parser.all_logs)
 
+    # Encode logs using one hot encoding. log_parser.all_logs
+    #    will contain encoded logs after this 
+    # Carefull the training dataset idealy should have all the possible values
+    # TODO maybe delete component or PID if the training takes to long  
+    dimension = log_parser.one_hot_encoding()
+    print(log_parser.all_logs)
+    print(dimension) 
+    
     model = DeepLog().to(device)
     print(model)
 
