@@ -19,6 +19,7 @@ import time
 import sys
 import datetime
 import pandas as pd
+import re
 
 
 def help():
@@ -122,6 +123,12 @@ def open_file(fileName):
 class LogParser:
 
 
+    patterns = {
+        r'.*Served block.*to.*': "E3",
+        r'.*Receiving block.*src:.*dest:.*': "E5",
+        r'.*BLOCK\* NameSystem.*allocateBlock:.*': "E22",
+    }
+
     def __init__(self, log_file):
         self.log_file        = open_file(log_file)
         # todo maybe there will be problem with first timestamp 
@@ -147,9 +154,6 @@ class LogParser:
         # Combine date and time
         timestamp = datetime.datetime.combine(date.date(), time.time())
         unix_timestamp = int(timestamp.timestamp())
-        print("Unix Timestamp:", unix_timestamp)
-        print("Timestamp:", timestamp)
-
         
         if self.last_timestamp == 0:
             time_diff = 0
@@ -164,7 +168,18 @@ class LogParser:
     def __get_event(self, str):
         print("event extraction")
         print(str)
-        return ""
+        matched = ""
+
+        for pattern, category in self.patterns.items():
+            if re.search(pattern, str):
+                matched = category
+                break
+
+        print("Matched categories:")
+        print(matched)
+        
+        
+        return matched 
 
     ##
     # Parse one line of the log file into the dataframe 
@@ -181,8 +196,8 @@ class LogParser:
         # check if we are on EOF 
         if not line: 
             return None
-        print(line)
-        print(parts)
+        
+        
         time_diff = self.__parse_time(parts[0], parts[1])
         pid       = parts[2]
         level     = parts[3]
@@ -193,8 +208,6 @@ class LogParser:
         self.all_logs = self.all_logs._append(log_entry, ignore_index=True)
 
 
-        print("time_diff")
-        print(time_diff)
         return line.strip()  # Strip to remove leading/trailing whitespace
 
 
