@@ -17,6 +17,7 @@
 import os.path
 import time
 import sys
+import datetime
 
 
 def help():
@@ -118,16 +119,38 @@ def open_file(fileName):
 #   081109 203615 148 INFO dfs.DataNode$PacketResponder: PacketResponder 1 for block blk_38865049064139660 terminating
 
 class LogParser:
+
+
     def __init__(self, log_file):
-        self.log_file = open_file(log_file)
+        self.log_file        = open_file(log_file)
+        self.last_timestamp  = 0 
 
     # Destructor closes the file 
     def __del__(self):
         self.log_file.close()
 
+    # 081109 -> 2008.11.09
+    # 203615 -> 20:36:15
+    @staticmethod
+    def __parse_time(date, time):
+        date = datetime.datetime.strptime(date, "%y%m%d")
+        time = datetime.datetime.strptime(time, "%H%M%S")
+        
+        # Combine date and time
+        timestamp = datetime.datetime.combine(date.date(), time.time())
+        unix_timestamp = int(timestamp.timestamp())
+        print("Unix Timestamp:", unix_timestamp)
+        print("Timestamp:", timestamp)
+        return timestamp
+
     def parse_line(self):
-        line = self.log_file.readline() 
+        line    = self.log_file.readline()
+        parts = line.split()  
         if line: # check if we are on EOF 
+            print(line)
+            print(line.strip())
+            print(parts)
+            timestamp = self.__parse_time(parts[0], parts[1])
             return line.strip()  # Strip to remove leading/trailing whitespace
         else:
             return None
@@ -139,12 +162,12 @@ def main():
 
     log_parser = LogParser(training_file)
     parsed_log = log_parser.parse_line()
-    while True:
-        line = log_parser.parse_line()
-        if line == None:
-            break
-        else:
-            print(line)
+#    while True:
+#        line = log_parser.parse_line()
+#        if line == None:
+#            break
+#        else:
+#            print(line)
 
 if __name__ == "__main__":
     main()
