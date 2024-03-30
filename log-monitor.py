@@ -18,6 +18,7 @@ import os.path
 import time
 import sys
 import datetime
+import pandas as pd
 
 
 def help():
@@ -123,7 +124,13 @@ class LogParser:
 
     def __init__(self, log_file):
         self.log_file        = open_file(log_file)
-        self.last_timestamp  = 0 
+        # todo maybe there will be problem with first timestamp 
+        self.last_timestamp  = 0
+
+        ## This is table with all the logs  
+        # event E1-E29, ti+1 - ti, pid, level={INFO,WARNING,ERROR}, component={dfs.DataNode$PacketResponder} 
+        self.all_logs = pd.DataFrame(columns=['event', 'time_diff', 'pid', 'level', 'component'])
+
 
     # Destructor closes the file 
     def __del__(self):
@@ -131,8 +138,9 @@ class LogParser:
 
     # 081109 -> 2008.11.09
     # 203615 -> 20:36:15
-    @staticmethod
-    def __parse_time(date, time):
+    # First create Current Timestamp and then 
+    #  @return last_timestamp - current_timestamp 
+    def __parse_time(self, date, time):
         date = datetime.datetime.strptime(date, "%y%m%d")
         time = datetime.datetime.strptime(time, "%H%M%S")
         
@@ -141,19 +149,53 @@ class LogParser:
         unix_timestamp = int(timestamp.timestamp())
         print("Unix Timestamp:", unix_timestamp)
         print("Timestamp:", timestamp)
-        return timestamp
 
+        
+        if self.last_timestamp == 0:
+            time_diff = 0
+        else: 
+            time_diff = last_timestamp - timestamp
+        
+        last_timestamp = timestamp
+        
+        return time_diff
+    ##
+    # Get event from string part of the log  
+    def __get_event(self, str):
+        print("event extraction")
+        print(str)
+        return ""
+
+    ##
+    # Parse one line of the log file into the dataframe 
     def parse_line(self):
         line    = self.log_file.readline()
         parts = line.split()  
-        if line: # check if we are on EOF 
-            print(line)
-            print(line.strip())
-            print(parts)
-            timestamp = self.__parse_time(parts[0], parts[1])
-            return line.strip()  # Strip to remove leading/trailing whitespace
-        else:
+
+        event=""
+        time_diff=0
+        pid=""
+        level=""
+        component=""
+
+        # check if we are on EOF 
+        if not line: 
             return None
+        print(line)
+        print(parts)
+        time_diff = self.__parse_time(parts[0], parts[1])
+        pid       = parts[2]
+        level     = parts[3]
+        component = parts[4]
+        event     = self.__get_event(' '.join(parts[5:]))
+
+        log_entry = {'event': event, 'time_diff': time_diff, 'pid': pid, 'level': level, 'component': component}
+        self.all_logs = self.all_logs._append(log_entry, ignore_index=True)
+
+
+        print("time_diff")
+        print(time_diff)
+        return line.strip()  # Strip to remove leading/trailing whitespace
 
 
 def main():
@@ -162,6 +204,9 @@ def main():
 
     log_parser = LogParser(training_file)
     parsed_log = log_parser.parse_line()
+    print(log_parser.all_logs)
+    parsed_log = log_parser.parse_line()
+    print(log_parser.all_logs)
 #    while True:
 #        line = log_parser.parse_line()
 #        if line == None:
