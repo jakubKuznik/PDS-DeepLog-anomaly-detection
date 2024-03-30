@@ -81,19 +81,26 @@ def main():
     
     training_file, testing_file, params = parse_arguments(sys.argv)
 
-    # Init log_parser with training_file 
-    log_parser = LogParser(training_file)
+    # Init log_parser with training_file and testing file 
+    parser_train = LogParser(training_file)
+    parser_test  = LogParser(testing_file)
     
-    log_parser.parse_file()
+    parser_train.parse_file()
+    parser_test.parse_file()
     
-    print(log_parser.all_logs)
+    print(parser_train.all_logs)
+    print(parser_test.all_logs)
 
     # Encode logs using one hot encoding. log_parser.all_logs
     #    will contain encoded logs after this 
     # Carefull the training dataset idealy should have all the possible values
     # TODO maybe delete component or PID if the training takes to long  
-    dimension = log_parser.one_hot_encoding()
-    print(log_parser.all_logs)
+    # dimenstion = Rows x Columns  
+    # TODO rewrite it so we will get all the features both from training and 
+    #   testing files and then do one_hot_encoding() 
+    dimension = LogParser.one_hot_encoding(parser_train, parser_test)
+    
+    print(parser_train.all_logs)
     print(dimension) 
     
     model = DeepLog().to(device)

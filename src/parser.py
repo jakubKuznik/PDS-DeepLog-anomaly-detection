@@ -94,7 +94,7 @@ class LogParser:
         ## This is table with all the logs  
         # event E1-E29, ti+1 - ti, pid, level={INFO,WARNING,ERROR}, component={dfs.DataNode$PacketResponder} 
         self.all_logs   = pd.DataFrame(columns=['event', 'time_diff', 'pid', 'level', 'component'])
-
+        
     # Destructor closes the file 
     def __del__(self):
         self.log_file.close()
@@ -176,23 +176,36 @@ class LogParser:
         log_entry = {'event': event, 'time_diff': time_diff, 'pid': pid, 'level': level, 'component': component}
         self.all_logs = self.all_logs._append(log_entry, ignore_index=True)
 
-    # Convert out self.all_logs to ONE-HOT encoded pandas 
+    # Convert out both given LogParser into the ONE-HOT encode. 
+    #  It has to be done on both of then because we need all the possible classes 
+    # 
+    # Log: 
     # {'event': 'E5', 'time_diff': 0, 'pid': '143', 'level': 'INFO', 'component': 'bbb'}
+    # 
     # Atributtes that are converted: 
     #  event, pid, level, component 
+    # 
     # @return dimension of the dataset after encoding 
-    def one_hot_encoding(self):
+    @staticmethod 
+    def one_hot_encoding(training: 'LogParser', testing: 'LogParser'):
+        
+        # Find the unique values
+        merge = pd.concat([training.all_logs, testing.all_logs])
+ 
+        # Get the number of rows in the training data
+        num_training_rows = training.all_logs.shape[0]
 
-        # Find the unique values 
-        event_one_hot = pd.get_dummies(self.all_logs['event'], prefix='event')
-        pid_one_hot = pd.get_dummies(self.all_logs['pid'], prefix='pid')
-        level_one_hot = pd.get_dummies(self.all_logs['level'], prefix='level')
-        component_one_hot = pd.get_dummies(self.all_logs['component'], prefix='component')
+        event_one_hot       = pd.get_dummies(merge['event'], prefix='event')
+        pid_one_hot         = pd.get_dummies(merge['pid'], prefix='pid')
+        level_one_hot       = pd.get_dummies(merge['level'], prefix='level')
+        component_one_hot   = pd.get_dummies(merge['component'], prefix='component')
 
         # Do the actuall encoding  
-        df_encoded = pd.concat([self.all_logs.drop(columns=['event', 'pid', 'level', 'component']),
-                                event_one_hot, pid_one_hot, level_one_hot, component_one_hot], axis=1)
+        df_encoded = pd.concat([merge.drop(columns=['event', 'pid', 'level', 'component']),
+            event_one_hot, pid_one_hot, level_one_hot, component_one_hot], axis=1)
+        
+        # Split the encoded data back into training and testing sets
+        training.all_logs = df_encoded.iloc[:num_training_rows]
+        testing.all_logs = df_encoded.iloc[num_training_rows:]
 
-        self.all_logs = df_encoded
-        return self.all_logs.shape 
-    
+        return training.all_logs.shape[1]
