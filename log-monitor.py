@@ -28,11 +28,15 @@ def help():
     print("     -testing <file>")
     print("     -<params> par1=val1,par2=val2,...")
 
-def my_errors(code):
+def my_errors(code, str):
     if code == 0: 
         print("Error: Wrong arguments try: ", file=sys.stderr)
         help()
         exit()
+    elif code == 1:
+        print("Unknown log format: " + str, file=sys.stderr)
+        exit()
+
 
 # @return training_file, testing_file, params 
 def parse_arguments(argv):
@@ -51,23 +55,23 @@ def parse_arguments(argv):
             if i < len(argv):
                 training_file = argv[i]
             else: 
-                my_errors(0)
+                my_errors(0, "")
         elif argv[i] == "-testing":
             i += 1 
             if i < len(argv):
                 testing_file = argv[i]
             else: 
-                my_errors(0)
+                my_errors(0, "")
         elif argv[i] == "-params":
             i += 1 
             if i < len(argv):
                 params = argv[i]
             else: 
-                my_errors(0)
+                my_errors(0, "")
         i += 1
 
     if training_file == "" or testing_file == "":
-        my_errors(0)
+        my_errors(0, "")
 
     return training_file, testing_file, params
 
@@ -124,9 +128,35 @@ class LogParser:
 
 
     patterns = {
+        r'.*Adding an already existing block.*': "E1",
+        r'.*Verification succeeded for.*': "E2",
         r'.*Served block.*to.*': "E3",
+        r'.*Got exception while serving.*to.*': "E4",
         r'.*Receiving block.*src:.*dest:.*': "E5",
+        r'.*Received block.*src:.*dest:.*of size.*': "E6",
+        r'.*writeBlock.*received exception.*': "E7",
+        r'.*PacketResponder.*Exception.*': "E8",
+        r'.*Received block.*of size.*from.*': "E9",
+        r'.*PacketResponder.*Exception.*': "E10",
+        r'.*PacketResponder.*for block.*terminating*': "E11",
+        r'.*:Exception writing block.*to mirror.*': "E12",
+        r'.*Receiving empty packet for block.*': "E13",
+        r'.*Exception in receiveBlock for block.*': "E14",
+        r'.*Changing block file offset of block.*from.*to.*meta file offset to.*': "E15",
+        r'.*:Transmitted block.*to.*': "E16",
+        r'.*:Failed to transfer.*to.*got.*': "E17",
+        r'.*Starting thread to transfer block.*to.*': "E18",
+        r'.*Reopen Block.*': "E19",
+        r'.*Unexpected error trying to delete block.*BlockInfo not found in volumeMap.*': "E20",
+        r'.*Deleting block.*file.*': "E21",
         r'.*BLOCK\* NameSystem.*allocateBlock:.*': "E22",
+        r'.*BLOCK\* NameSystem.*delete:.*is added to invalidSet of.*': "E23",
+        r'.*BLOCK\* Removing block.*from neededReplications as it does not belong to any file.*': "E24",
+        r'.*BLOCK\* ask.*to replicate.*to.*': "E25",
+        r'.*BLOCK\* NameSystem.*addStoredBlock: blockMap updated:.*is added to.*size.*': "E26",
+        r'.*BLOCK\* NameSystem.*addStoredBlock: Redundant addStoreBlock request received for.*on.*size.*': "E27",
+        r'.*BLOCK\* NameSystem.*addStoredBlock: addStoredBlock request received for.*on.*size.*But it does not belong to any file.*': "E28",
+        r'.*PengingReplicationMonitor timed out block.*': "E29",
     }
 
     def __init__(self, log_file):
@@ -164,20 +194,18 @@ class LogParser:
         
         return time_diff
     ##
-    # Get event from string part of the log  
+    # Get event from string part of the log using pattern 
     def __get_event(self, str):
-        print("event extraction")
-        print(str)
         matched = ""
 
         for pattern, category in self.patterns.items():
             if re.search(pattern, str):
                 matched = category
                 break
-
-        print("Matched categories:")
-        print(matched)
         
+        if matched == "":
+            my_errors(1, str)
+
         
         return matched 
 
@@ -216,16 +244,15 @@ def main():
     training_file, testing_file, params = parse_arguments(sys.argv)
 
     log_parser = LogParser(training_file)
-    parsed_log = log_parser.parse_line()
+    i = 0
+    while True:
+        i += 1 
+        if i % 1000 == 0: 
+            print(i)
+        line = log_parser.parse_line()
+        if line == None:
+            break
     print(log_parser.all_logs)
-    parsed_log = log_parser.parse_line()
-    print(log_parser.all_logs)
-#    while True:
-#        line = log_parser.parse_line()
-#        if line == None:
-#            break
-#        else:
-#            print(line)
 
 if __name__ == "__main__":
     main()
