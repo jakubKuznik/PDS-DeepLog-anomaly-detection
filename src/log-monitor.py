@@ -19,7 +19,7 @@ import time
 import sys
 
 from parser import LogParser
-
+from DeepLog import DeepLog, device
 
 def help():
     print("log-monitor")
@@ -87,6 +87,10 @@ def main():
     log_parser.parse_file()
     
     print(log_parser.all_logs)
+
+    model = DeepLog().to(device)
+    print(model)
+
 
 if __name__ == "__main__":
     main()
