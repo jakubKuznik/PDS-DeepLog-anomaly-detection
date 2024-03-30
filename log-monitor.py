@@ -126,39 +126,39 @@ def open_file(fileName):
 
 class LogParser:
 
-
+    # It is optimalized by library 
     patterns = {
-        r'.*Adding an already existing block.*': "E1",
-        r'.*Verification succeeded for.*': "E2",
-        r'.*Served block.*to.*': "E3",
-        r'.*Got exception while serving.*to.*': "E4",
-        r'.*Receiving block.*src:.*dest:.*': "E5",
-        r'.*Received block.*src:.*dest:.*of size.*': "E6",
-        r'.*writeBlock.*received exception.*': "E7",
-        r'.*PacketResponder.*Exception.*': "E8",
-        r'.*Received block.*of size.*from.*': "E9",
-        r'.*PacketResponder.*Exception.*': "E10",
-        r'.*PacketResponder.*for block.*terminating*': "E11",
-        r'.*:Exception writing block.*to mirror.*': "E12",
-        r'.*Receiving empty packet for block.*': "E13",
-        r'.*Exception in receiveBlock for block.*': "E14",
-        r'.*Changing block file offset of block.*from.*to.*meta file offset to.*': "E15",
-        r'.*:Transmitted block.*to.*': "E16",
-        r'.*:Failed to transfer.*to.*got.*': "E17",
-        r'.*Starting thread to transfer block.*to.*': "E18",
-        r'.*Reopen Block.*': "E19",
-        r'.*Unexpected error trying to delete block.*BlockInfo not found in volumeMap.*': "E20",
-        r'.*Deleting block.*file.*': "E21",
-        r'.*BLOCK\* NameSystem.*allocateBlock:.*': "E22",
-        r'.*BLOCK\* NameSystem.*delete:.*is added to invalidSet of.*': "E23",
-        r'.*BLOCK\* Removing block.*from neededReplications as it does not belong to any file.*': "E24",
-        r'.*BLOCK\* ask.*to replicate.*to.*': "E25",
-        r'.*BLOCK\* NameSystem.*addStoredBlock: blockMap updated:.*is added to.*size.*': "E26",
-        r'.*BLOCK\* NameSystem.*addStoredBlock: Redundant addStoreBlock request received for.*on.*size.*': "E27",
-        r'.*BLOCK\* NameSystem.*addStoredBlock: addStoredBlock request received for.*on.*size.*But it does not belong to any file.*': "E28",
-        r'.*PengingReplicationMonitor timed out block.*': "E29",
+        'E1': re.compile(r'.*Adding an already existing block.*'),
+        'E2': re.compile(r'.*Verification succeeded for.*'),
+        'E3': re.compile(r'.*Served block.*to.*'),
+        'E4': re.compile(r'.*Got exception while serving.*to.*'),
+        'E5': re.compile(r'.*Receiving block.*src:.*dest:.*'),
+        'E6': re.compile(r'.*Received block.*src:.*dest:.*of size.*'),
+        'E7': re.compile(r'.*writeBlock.*received exception.*'),
+        'E8': re.compile(r'.*PacketResponder.*Exception.*'),
+        'E9': re.compile(r'.*Received block.*of size.*from.*'),
+        'E10': re.compile(r'.*PacketResponder.*Exception.*'),
+        'E11': re.compile(r'.*PacketResponder.*for block.*terminating*'),
+        'E12': re.compile(r'.*:Exception writing block.*to mirror.*'),
+        'E13': re.compile(r'.*Receiving empty packet for block.*'),
+        'E14': re.compile(r'.*Exception in receiveBlock for block.*'),
+        'E15': re.compile(r'.*Changing block file offset of block.*from.*to.*meta file offset to.*'),
+        'E16': re.compile(r'.*:Transmitted block.*to.*'),
+        'E17': re.compile(r'.*:Failed to transfer.*to.*got.*'),
+        'E18': re.compile(r'.*Starting thread to transfer block.*to.*'),
+        'E19': re.compile(r'.*Reopen Block.*'),
+        'E20': re.compile(r'.*Unexpected error trying to delete block.*BlockInfo not found in volumeMap.*'),
+        'E21': re.compile(r'.*Deleting block.*file.*'),
+        'E22': re.compile(r'.*BLOCK\* NameSystem.*allocateBlock:.*'),
+        'E23': re.compile(r'.*BLOCK\* NameSystem.*delete:.*is added to invalidSet of.*'),
+        'E24': re.compile(r'.*BLOCK\* Removing block.*from neededReplications as it does not belong to any file.*'),
+        'E25': re.compile(r'.*BLOCK\* ask.*to replicate.*to.*'),
+        'E26': re.compile(r'.*BLOCK\* NameSystem.*addStoredBlock: blockMap updated:.*is added to.*size.*'),
+        'E27': re.compile(r'.*BLOCK\* NameSystem.*addStoredBlock: Redundant addStoredBlock request received for.*on.*size.*'),
+        'E28': re.compile(r'.*BLOCK\* NameSystem.*addStoredBlock: addStoredBlock request received for.*on.*size.*But it does not belong to any file.*'),
+        'E29': re.compile(r'.*PengingReplicationMonitor timed out block.*'),
     }
-
+    
     def __init__(self, log_file):
         self.log_file        = open_file(log_file)
         # todo maybe there will be problem with first timestamp 
@@ -198,21 +198,27 @@ class LogParser:
     def __get_event(self, str):
         matched = ""
 
-        for pattern, category in self.patterns.items():
-            if re.search(pattern, str):
-                matched = category
-                break
-        
-        if matched == "":
-            my_errors(1, str)
-
+        # Go throught patterns, if not match retun empty 
+        for pattern, compiled_pattern in self.patterns.items():
+            if compiled_pattern.match(str):
+                return pattern
+        my_errors(1, str)
         
         return matched 
+    
+    # Read whole file at once and call parse_line() on each line 
+    def parse_file(self):
+        lines = self.log_file.readlines()
+        i = 0 
+        for l in lines:
+            i += 1 
+            if i % 1000 == 0:
+                print(i)
+            self.parse_line(l)
 
     ##
     # Parse one line of the log file into the dataframe 
-    def parse_line(self):
-        line    = self.log_file.readline()
+    def parse_line(self, line):
         parts = line.split()  
 
         event=""
@@ -243,15 +249,11 @@ def main():
     
     training_file, testing_file, params = parse_arguments(sys.argv)
 
+    # Init log_parser with training_file 
     log_parser = LogParser(training_file)
-    i = 0
-    while True:
-        i += 1 
-        if i % 1000 == 0: 
-            print(i)
-        line = log_parser.parse_line()
-        if line == None:
-            break
+    
+    log_parser.parse_file()
+    
     print(log_parser.all_logs)
 
 if __name__ == "__main__":
