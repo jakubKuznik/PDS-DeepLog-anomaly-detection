@@ -17,7 +17,7 @@ import pandas as pd
 from torch.autograd import Variable
 import numpy as np
 from torch.utils.data import DataLoader, TensorDataset
-
+import torch.nn.functional as F
 
 
 ## Init GPU 
@@ -65,6 +65,7 @@ class DeepLog(nn.Module):
       self.linear     = nn.Linear(LSTM_hidden_features, output_size)
       # Soft max will be applied to the last dimension of input tensor (-1)
       #  We are using softmax because we want a probability of anomaly 
+      
       self.softmax    = nn.LogSoftmax(dim=-1)
 
 
@@ -74,8 +75,8 @@ class DeepLog(nn.Module):
       c0      = torch.zeros(self.LSTM_layers, input.size(0), self.LSTM_hidden_features).to(input.device)
       out, _  = self.lstm(input, (h0, c0))
       out     = self.linear(out[:, -1, :])
-      out     = self.softmax(out)
-      return out
+      # out = F.log_softmax(out, dim=-1)  # Using F.log_softmax instead of nn.LogSoftmax
+      return torch.exp(out)  # Exponentiating to get probabilities
 
 
 

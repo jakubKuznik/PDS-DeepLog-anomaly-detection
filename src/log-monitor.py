@@ -102,37 +102,59 @@ def train(data_loader, model, loss_func, optimizer):
         optimizer.zero_grad()
 
 
-
-# evaluate model on testing data
-def test(data_loader, model, loss_func):
-
-    
-    size = len(data_loader.dataset)
-    num_batches = len(data_loader)
+def test(dataloader, model, loss_fn):
+    # size of dataset 
+    size = len(dataloader.dataset)
+    ## how many batches are in the dataset 
+    num_batches = len(dataloader)
     ## same as we did model.train() 
     ##  This set model into the evaluation state 
-    
     model.eval()
-    test_loss, correct = 0, 0
-    
+    test_loss, anomaly_correct, anomaly_wrong, normal_correct, normal_wrong = 0, 0, 0, 0, 0
+    total_anomalies, total_normal = 0, 0
+    total = 0
+    correct = 0
     ## with torch.no_grad() disable gradient callculation for a testing 
     ##   so it will be faster 
     with torch.no_grad():
-        ## get X data and coresponding y label 
-        for X, y in data_loader:
+        ## get X data and corresponding y label 
+        for X, y in dataloader:
             X, y = X.to(device), y.to(device)
             pred = model(X)
+            test_loss += loss_fn(pred, y).item()
+            
+            # Count correct and wrong predictions
+            for i in range(len(y)):
+                total += 1
+                if y[i][0] == 1:
+                    total_anomalies += 1
+                    if pred[i][0] < pred[i][1]:
+                        anomaly_correct += 1
+                        correct += 1
+                    else:
+                        anomaly_wrong += 1
+                else:
+                    total_normal += 1
+                    if pred[i][0] >= pred[i][1]:
+                        normal_correct += 1
+                        correct += 1
+                    else:
+                        normal_wrong += 1
 
-            # Assuming pred is a single value for each sample
-            pred_binary = (pred >= 0.5).float()  # Convert to binary predictions
-            test_loss += loss_func(pred, y).item()
-            correct += (pred_binary == y).type(torch.float).sum().item()
-
-    # calculating avreage test loss and accuracy 
+    # calculating average test loss
     test_loss /= num_batches
-    correct /= size
-    print(f"TEST: Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
     
+    # Print results
+    print(f"Test Error: \nAvg loss: {test_loss:>8f}")
+    print(f"Accuracy: {100 * (correct/total):.2f}%")
+    print(f"Anomaly (Class 1) Correct: {anomaly_correct}")
+    print(f"Anomaly (Class 1) Wrong: {anomaly_wrong}")
+    print(f"Anomaly (Class 1) Detection Accuracy: {100 * (anomaly_correct / (anomaly_correct + anomaly_wrong)):.2f}%")
+    print(f"Total Anomalies: {total_anomalies}")
+    print(f"Normal (Class 2) Correct: {normal_correct}")
+    print(f"Normal (Class 2) Wrong: {normal_wrong}")
+    print(f"Normal (Class 2) Detection Accuracy: {100 * (normal_correct / (normal_correct + normal_wrong)):.2f}%")
+    print(f"Total Normal Instances: {total_normal}")
 
 
 def main():
@@ -141,9 +163,10 @@ def main():
     hidden_features   = 64 
     LSTM_layers       = 2 
     output_size       = 2
-    epochs            = 50 
+    epochs            = 100
     # [1,2,3] [2,3,4] [3,4,5]
     window_size       = 10
+    imbalance_factor = 5
     
     training_file, testing_file, params = parse_arguments(sys.argv)
 
@@ -181,18 +204,29 @@ def main():
     model = DeepLog(train_input_features, LSTM_layers, hidden_features, output_size, batch_size)
     model.to(device)
 
-     
-    loss = nn.CrossEntropyLoss()
+    
+    # ANNOMALY 
+    # [1,0]
+    class_weights = torch.tensor([imbalance_factor, 1]).to(device)
+
+    # Instantiate the loss function with class weights
+    # CrossEntropyLoss automatically applies weights to each class
+    loss = nn.CrossEntropyLoss(weight=class_weights) 
 
     # TODO maybe add constant like 1r=1e-3
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
     for ep in range(1, epochs+1):
+        
+        print("--------------------------------------")
+        print("ep: ", ep, "total epochs:", epochs)
 
         train(train_data_loader, model, loss, optimizer)
-        test(test_data_loader, model, loss) 
         
-        print("ep: ", ep, "total epochs:", epochs)
+        if ep % 10 == 0:         
+            test(test_data_loader, model, loss) 
+        print("--------------------------------------")
+        
 
 if __name__ == "__main__":
     main()
