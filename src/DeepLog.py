@@ -16,6 +16,10 @@ import torch.nn.functional as Fun
 import pandas as pd
 from torch.autograd import Variable
 import numpy as np
+from torch.utils.data import DataLoader, TensorDataset
+
+
+
 ## Init GPU 
 device = (
   "cuda"
@@ -103,3 +107,8 @@ class Preproces():
 
     self.data = np.array(sequences)
     self.labels = np.array(outputs)
+    
+    self.torch_data = torch.tensor(self.data, dtype=torch.float)
+    self.torch_labels = torch.tensor(self.labels, dtype=torch.float)
+    
+    self.dataset = TensorDataset(self.torch_data, self.torch_labels)

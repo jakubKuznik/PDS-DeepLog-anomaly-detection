@@ -89,9 +89,6 @@ def main():
     parser_train.parse_file()
     parser_test.parse_file()
     
-    print(parser_train.all_logs)
-    print(parser_test.all_logs)
-
     # Encode logs using one hot encoding. log_parser.all_logs
     #    will contain encoded logs after this 
     # Carefull the training dataset idealy should have all the possible values
@@ -100,16 +97,11 @@ def main():
     # TODO rewrite it so we will get all the features both from training and 
     #   testing files and then do one_hot_encoding() 
     dimension = LogParser.one_hot_encoding(parser_train, parser_test)
-    
-    print(parser_train.all_logs)
-    print(dimension) 
-
 
     ## preapre
     window_size       = 10
+    # In preprocessor thre will be the dataset 
     preproces_train = Preproces(parser_train.all_logs, window_size)
-    print(preproces_train.data)
-    print(preproces_train.labels)
 
     input_features    = preproces_train.features
     batch_size        = 64
@@ -118,12 +110,7 @@ def main():
     output_size       = 2
     epochs            = 50 
     
-    torch_data = torch.tensor(preproces_train.data, dtype=torch.float)
-    torch_labels = torch.tensor(preproces_train.labels, dtype=torch.float)
-    
-    dataset = TensorDataset(torch_data, torch_labels)
-    
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True) 
+    data_loader = DataLoader(preproces_train.dataset, batch_size=batch_size, shuffle=False, drop_last=True) 
     
     print(data_loader)
 
@@ -139,12 +126,12 @@ def main():
     for batch_data, batch_labels in data_loader:
         
         print("input batch shape")
-        print(batch_data.shape)
         # Pass the batch_data through the model
         output = model(batch_data.to(device))
         
         # Print the output for the first batch only
         print(output)
+        print(batch_data.shape)
         
         # Break the loop after processing the first batch
         break
