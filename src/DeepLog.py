@@ -91,7 +91,7 @@ class Preproces():
     data  =  dataF.iloc[:, 2:].values.astype(float) 
     self.samples, self.features = data.shape
     # 1.0 mean anomaly 
-    labels = dataF['annotation'].map({'blk_Normal': 0.0, 'blk_Anomaly': 1.0})
+    labels = dataF['annotation'].map({'blk_Normal': False, 'blk_Anomaly': True })
 
 
     # Create sequences
@@ -101,9 +101,12 @@ class Preproces():
     for i in range(self.samples - window_size + 1):
       
       sequence = data[i:i+window_size]  # Extract a sequence of data points
-      lab = labels[i:i+window_size]
+      # check if there is an anomaly
+      if any(labels[i:i+window_size]):
+        outputs.append(True)
+      else:
+        outputs.append(False)
       sequences.append(sequence)
-      outputs.append(lab)
 
     self.data = np.array(sequences)
     self.labels = np.array(outputs)

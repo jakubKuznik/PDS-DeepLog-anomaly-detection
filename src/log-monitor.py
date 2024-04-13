@@ -22,7 +22,8 @@ from parser import LogParser
 from DeepLog import DeepLog, device, Preproces
 from torch.utils.data import DataLoader, TensorDataset
 import torch
-
+import torch.nn as nn 
+import torch.optim as optim 
 
 def help():
     print("log-monitor")
@@ -76,6 +77,35 @@ def parse_arguments(argv):
 
     return training_file, testing_file, params
 
+# train one epoch
+def train(data_loader, model, loss, optim):
+        
+    model.train()
+    # Iterate over the data loader
+    for batch_data, batch_labels in data_loader:
+
+        D, L = batch_data.to(device), batch_labels.to(device)
+
+        optim.zero_grad()
+
+        # Pass the batch_data through the model
+        # output is 64 x ([2])
+        # [0.4123, 0.3214] normal probability and annomaly probability
+        output = model(D)
+
+
+        print(L)
+        print(L.shape)
+        print(output.shape)
+        exit() 
+        # Break the loop after processing the first batch
+        break
+
+# evaluate model on testing data
+def test():
+    model.eval()
+    print("test")
+
 
 def main():
     
@@ -112,30 +142,23 @@ def main():
     
     data_loader = DataLoader(preproces_train.dataset, batch_size=batch_size, shuffle=False, drop_last=True) 
     
-    print(data_loader)
-
     # Instantiate the model
-    model = DeepLog(input_features, LSTM_layers, hidden_features, output_size, batch_size)
-    print(model)
-    model.to(device)
-
     # Input for LSTM 
     # (batch-size, timestamp, input_dim) 
-    
-    # Iterate over the data loader
-    for batch_data, batch_labels in data_loader:
+    model = DeepLog(input_features, LSTM_layers, hidden_features, output_size, batch_size)
+    model.to(device)
+
+     
+    loss = nn.CrossEntropyLoss()
+    # todo maybe add constant like 1r=1e-3
+    optimizer = optim.Adam(model.parameters())
+
+    for ep in range(1, epochs+1):
+
+        train(data_loader, model, loss, optimizer)
         
-        print("input batch shape")
-        # Pass the batch_data through the model
-        output = model(batch_data.to(device))
         
-        # Print the output for the first batch only
-        print(output)
-        print(batch_data.shape)
-        
-        # Break the loop after processing the first batch
-        break
-    print("haleluja")
+        print("ep: ", ep, "total epochs:", epochs)
 
 if __name__ == "__main__":
     main()
