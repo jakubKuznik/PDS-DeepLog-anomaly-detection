@@ -20,6 +20,7 @@ import sys
 
 from parser import LogParser
 from DeepLog import DeepLog, device, Preproces
+from torch.utils.data import DataLoader, TensorDataset
 
 def help():
     print("log-monitor")
@@ -104,20 +105,32 @@ def main():
 
     ## preapre
     preproces_train = Preproces(parser_train.all_logs)
+    
+    # ([715, 93])
     print(preproces_train.tensor_labeled['data'])
     print(preproces_train.tensor_labeled['labels'])
-    # ([715, 93])
-    print(preproces_train.tensor_labeled['data'].size())
 
-    # input_features    = dimension
-    # batch_size        = 64
-    # window size       = 64
-    # hidden_features   = 64 
-    # LSMT layers       = 2 
-    # output size       = 1 
-    # epochs            = 50 
-    model = DeepLog().to(device)
+    input_features    = preproces_train.features 
+    batch_size        = 64
+    # window_size       = 64
+    hidden_features   = 64 
+    LSTM_layers       = 2 
+    output_size       = 2
+    epochs            = 50 
+
+    print(preproces_train.tensor_labeled['data'].shape)
+    print(preproces_train.tensor_labeled['labels'].shape)
+    
+    print(preproces_train.tensor_labeled['data'])
+    print(preproces_train.tensor_labeled['labels'])
+    dataset = TensorDataset(preproces_train.tensor_labeled['data'], 
+                            preproces_train.tensor_labeled['labels'])
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False) 
+    
+    # Instantiate the model
+    model = DeepLog(input_features, LSTM_layers, hidden_features, output_size)
     print(model)
+    model.to(device)
 
 
 if __name__ == "__main__":

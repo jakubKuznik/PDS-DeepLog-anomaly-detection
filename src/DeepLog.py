@@ -38,7 +38,7 @@ class DeepLog(nn.Module):
     # LSTM_hidden_layers - How many features will be in hidden layer which 
     #     represents the memory of the NN 
     # ouput_size 
-    def __init__(self, input_features, LSTM_layers, LSTM_hidden_features):
+    def __init__(self, input_features, LSTM_layers, LSTM_hidden_features, output_size):
         super().__init__()
 
         # TODO i assume that the hidden_features and input features will always be the same 
@@ -62,10 +62,10 @@ class DeepLog(nn.Module):
 
 
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers, input.size(0), self.hidden_size).to(input.device)
-        c0 = torch.zeros(self.num_layers, input.size(0), self.hidden_size).to(input.device)
-        out, _ = self.lstm(input, (h0, c0))
-        out = self.fc(out[:, -1, :])
+        #h0 = torch.zeros(self.LSTM_layers, input.size(0), self.LSTM_hidden_features).to(input.device)
+        #c0 = torch.zeros(self.LSTM_layers, input.size(0), self.LSTM_hidden_features).to(input.device)
+        #out, _ = self.lstm(input, (h0, c0))
+        #out = self.linear(out[:, -1, :])
         return out
 
 
@@ -75,12 +75,15 @@ class Preproces():
   # from pandas encoded in ONE-HOT-encoding
   #   prepare annotated tensor
   def __init__(self, dataF):
-
+    
     # here we are droping the time and label  
     tensor = torch.tensor(dataF.iloc[:, 2:].values)
     labels = dataF['annotation'].map({'blk_Normal': False, 'blk_Anomaly': True})
+    tensor_labels = torch.tensor(labels.values)
 
-    self.tensor_labeled = {'data': tensor, 'labels': labels}
+    self.tensor_labeled = {'data': tensor, 'labels': tensor_labels}
+    self.dato = self.tensor_labeled['data'].size(0)
+    self.features = self.tensor_labeled['data'].size(1)
 
 
     # todo window [1,2,3], [2,3,4], [3,4,5]

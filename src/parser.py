@@ -142,8 +142,8 @@ class LogParser:
         my_errors(1, str)
         
         return matched 
-    
-    # Read whole file at once and call parse_line() on each line 
+
+       # Read whole file at once and call parse_line() on each line 
     def parse_file(self):
         lines = self.log_file.readlines()
         self.num_logs = len(lines)
