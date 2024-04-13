@@ -21,6 +21,8 @@ import sys
 from parser import LogParser
 from DeepLog import DeepLog, device, Preproces
 from torch.utils.data import DataLoader, TensorDataset
+import torch
+
 
 def help():
     print("log-monitor")
@@ -104,34 +106,49 @@ def main():
 
 
     ## preapre
-    preproces_train = Preproces(parser_train.all_logs)
-    
-    # ([715, 93])
-    print(preproces_train.tensor_labeled['data'])
-    print(preproces_train.tensor_labeled['labels'])
+    window_size       = 10
+    preproces_train = Preproces(parser_train.all_logs, window_size)
+    print(preproces_train.data)
+    print(preproces_train.labels)
 
-    input_features    = preproces_train.features 
+    input_features    = preproces_train.features
     batch_size        = 64
-    # window_size       = 64
     hidden_features   = 64 
     LSTM_layers       = 2 
     output_size       = 2
     epochs            = 50 
+    
+    torch_data = torch.tensor(preproces_train.data, dtype=torch.float)
+    torch_labels = torch.tensor(preproces_train.labels, dtype=torch.float)
+    
+    dataset = TensorDataset(torch_data, torch_labels)
+    
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False, drop_last=True) 
+    
+    print(data_loader)
 
-    print(preproces_train.tensor_labeled['data'].shape)
-    print(preproces_train.tensor_labeled['labels'].shape)
-    
-    print(preproces_train.tensor_labeled['data'])
-    print(preproces_train.tensor_labeled['labels'])
-    dataset = TensorDataset(preproces_train.tensor_labeled['data'], 
-                            preproces_train.tensor_labeled['labels'])
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=False) 
-    
     # Instantiate the model
-    model = DeepLog(input_features, LSTM_layers, hidden_features, output_size)
+    model = DeepLog(input_features, LSTM_layers, hidden_features, output_size, batch_size)
     print(model)
     model.to(device)
 
+    # Input for LSTM 
+    # (batch-size, timestamp, input_dim) 
+    
+    # Iterate over the data loader
+    for batch_data, batch_labels in data_loader:
+        
+        print("input batch shape")
+        print(batch_data.shape)
+        # Pass the batch_data through the model
+        output = model(batch_data.to(device))
+        
+        # Print the output for the first batch only
+        print(output)
+        
+        # Break the loop after processing the first batch
+        break
+    print("haleluja")
 
 if __name__ == "__main__":
     main()
