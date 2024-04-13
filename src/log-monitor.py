@@ -19,7 +19,7 @@ import time
 import sys
 
 from parser import LogParser
-from DeepLog import DeepLog, device
+from DeepLog import DeepLog, device, Preproces
 
 def help():
     print("log-monitor")
@@ -35,7 +35,6 @@ def my_errors(code, str):
     elif code == 1:
         print("Unknown log format: " + str, file=sys.stderr)
         exit()
-
 
 # @return training_file, testing_file, params 
 def parse_arguments(argv):
@@ -75,8 +74,6 @@ def parse_arguments(argv):
     return training_file, testing_file, params
 
 
-
-
 def main():
     
     training_file, testing_file, params = parse_arguments(sys.argv)
@@ -84,7 +81,8 @@ def main():
     # Init log_parser with training_file and testing file 
     parser_train = LogParser(training_file)
     parser_test  = LogParser(testing_file)
-    
+
+    # Parse the input files  
     parser_train.parse_file()
     parser_test.parse_file()
     
@@ -102,7 +100,22 @@ def main():
     
     print(parser_train.all_logs)
     print(dimension) 
-    
+
+
+    ## preapre
+    preproces_train = Preproces(parser_train.all_logs)
+    print(preproces_train.tensor_labeled['data'])
+    print(preproces_train.tensor_labeled['labels'])
+    # ([715, 93])
+    print(preproces_train.tensor_labeled['data'].size())
+
+    # input_features    = dimension
+    # batch_size        = 64
+    # window size       = 64
+    # hidden_features   = 64 
+    # LSMT layers       = 2 
+    # output size       = 1 
+    # epochs            = 50 
     model = DeepLog().to(device)
     print(model)
 

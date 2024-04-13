@@ -15,7 +15,7 @@ Login: xkuzni04
 
 ## Installation Guide
 ### Run training
-```tbd```
+```python3 src/log-monitor.py -training logs/HDFS_v1/medium-HDFS.log -testing logs/HDFS_v1/small-HDFS.log```
 ### Run Evaluation
 tbd
 ### Use model  

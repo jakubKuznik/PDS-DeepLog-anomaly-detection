@@ -23,9 +23,16 @@ def annotate_logs(file, data_dict):
             words = line1.strip().split()
             for w in words:
                 if w.startswith('blk_'):
-                    block_num = w.split('_')
-                    anot = data_dict[w]
-                    new_word = block_num[0] + "_" + anot
+                    if w.endswith('.'):
+                        w = w[:-1]  
+                    block = w.split('_')
+                    num = ''.join(block[1:])
+                    concatenated_key = block[0] + "_" + num
+                    if concatenated_key in data_dict:
+                        anot = data_dict[concatenated_key]
+                    else:
+                        anot = "Normal"
+                    new_word = block[0] + "_" + anot
                     w = new_word
                 print(w, end=' ')    
             print()    

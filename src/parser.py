@@ -93,7 +93,7 @@ class LogParser:
 
         ## This is table with all the logs  
         # event E1-E29, ti+1 - ti, pid, level={INFO,WARNING,ERROR}, component={dfs.DataNode$PacketResponder} 
-        self.all_logs   = pd.DataFrame(columns=['event', 'time_diff', 'pid', 'level', 'component'])
+        self.all_logs   = pd.DataFrame(columns=['annotation','event', 'time_diff', 'pid', 'level', 'component'])
         
     # Destructor closes the file 
     def __del__(self):
@@ -165,15 +165,22 @@ class LogParser:
         pid=""
         level=""
         component=""
+        annotation=""
+
         
-        time_diff = self.__parse_time(parts[0], parts[1])
-        pid       = parts[2]
-        level     = parts[3]
-        component = parts[4]
-        event     = self.__get_event(' '.join(parts[5:]))
+        time_diff  = self.__parse_time(parts[0], parts[1])
+        pid        = parts[2]
+        level      = parts[3]
+        component  = parts[4]
+        event      = self.__get_event(' '.join(parts[5:]))
+        
+        for part in parts:
+            if part.startswith("blk_"):
+                annotation = part
+                break
 
         # Append parsed log into the DataFrame 
-        log_entry = {'event': event, 'time_diff': time_diff, 'pid': pid, 'level': level, 'component': component}
+        log_entry = {'annotation': annotation, 'event': event, 'time_diff': time_diff, 'pid': pid, 'level': level, 'component': component}
         self.all_logs = self.all_logs._append(log_entry, ignore_index=True)
 
     # Convert out both given LogParser into the ONE-HOT encode. 

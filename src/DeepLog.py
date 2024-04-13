@@ -14,7 +14,7 @@ from torch.utils.data import DataLoader
 from torchvision.transforms import ToTensor
 import torch.nn.functional as Fun
 
-
+import pandas as pd
 
 ## Init GPU 
 device = (
@@ -27,6 +27,8 @@ device = (
 print(f"Using {device} device")
 
 
+# https://github.com/nailo2c/deeplog/blob/master/deeplog/deeplog.py
+
 ## If we want to create pytorch NN we need to inherit from nn.module 
 class DeepLog(nn.Module):
 
@@ -36,7 +38,7 @@ class DeepLog(nn.Module):
     # LSTM_hidden_layers - How many features will be in hidden layer which 
     #     represents the memory of the NN 
     # ouput_size 
-    def __init__(self, input_features, LSTM_layers, LSTM_hidden_features, output_size):
+    def __init__(self, input_features, LSTM_layers, LSTM_hidden_features):
         super().__init__()
 
         # TODO i assume that the hidden_features and input features will always be the same 
@@ -60,5 +62,25 @@ class DeepLog(nn.Module):
 
 
     def forward(self, x):
-        return x
+        h0 = torch.zeros(self.num_layers, input.size(0), self.hidden_size).to(input.device)
+        c0 = torch.zeros(self.num_layers, input.size(0), self.hidden_size).to(input.device)
+        out, _ = self.lstm(input, (h0, c0))
+        out = self.fc(out[:, -1, :])
+        return out
 
+
+# prepare data from DF to Tensor for NN 
+class Preproces():
+
+  # from pandas encoded in ONE-HOT-encoding
+  #   prepare annotated tensor
+  def __init__(self, dataF):
+
+    # here we are droping the time and label  
+    tensor = torch.tensor(dataF.iloc[:, 2:].values)
+    labels = dataF['annotation'].map({'blk_Normal': False, 'blk_Anomaly': True})
+
+    self.tensor_labeled = {'data': tensor, 'labels': labels}
+
+
+    # todo window [1,2,3], [2,3,4], [3,4,5]
