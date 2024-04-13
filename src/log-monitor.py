@@ -78,7 +78,7 @@ def parse_arguments(argv):
     return training_file, testing_file, params
 
 # train one epoch
-def train(data_loader, model, loss, optim):
+def train(data_loader, model, loss_func, optimizer):
         
     model.train()
     # Iterate over the data loader
@@ -86,20 +86,22 @@ def train(data_loader, model, loss, optim):
 
         D, L = batch_data.to(device), batch_labels.to(device)
 
-        optim.zero_grad()
-
         # Pass the batch_data through the model
         # output is 64 x ([2])
         # [0.4123, 0.3214] normal probability and annomaly probability
         output = model(D)
 
+        # Compute the binary cross-entropy loss
+        loss = loss_func(output, L)  # Squeeze the output to remove extra dimensions
 
-        print(L)
-        print(L.shape)
-        print(output.shape)
-        exit() 
-        # Break the loop after processing the first batch
-        break
+        # Backpropagation
+        loss.backward()
+        
+        optimizer.step()
+        
+        optimizer.zero_grad()
+
+
 
 # evaluate model on testing data
 def test():

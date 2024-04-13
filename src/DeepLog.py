@@ -103,9 +103,9 @@ class Preproces():
       sequence = data[i:i+window_size]  # Extract a sequence of data points
       # check if there is an anomaly
       if any(labels[i:i+window_size]):
-        outputs.append(True)
+        outputs.append([True,False])
       else:
-        outputs.append(False)
+        outputs.append([False,True])
       sequences.append(sequence)
 
     self.data = np.array(sequences)
