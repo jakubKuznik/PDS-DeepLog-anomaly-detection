@@ -104,12 +104,46 @@ def train(data_loader, model, loss_func, optimizer):
 
 
 # evaluate model on testing data
-def test():
+def test(data_loader, model, loss_func):
+
+    
+    size = len(data_loader.dataset)
+    num_batches = len(data_loader)
+    ## same as we did model.train() 
+    ##  This set model into the evaluation state 
+    
     model.eval()
-    print("test")
+    test_loss, correct = 0, 0
+    
+    ## with torch.no_grad() disable gradient callculation for a testing 
+    ##   so it will be faster 
+    with torch.no_grad():
+        ## get X data and coresponding y label 
+        for X, y in data_loader:
+            X, y = X.to(device), y.to(device)
+            pred = model(X)
+
+            # Assuming pred is a single value for each sample
+            pred_binary = (pred >= 0.5).float()  # Convert to binary predictions
+            test_loss += loss_func(pred, y).item()
+            correct += (pred_binary == y).type(torch.float).sum().item()
+
+    # calculating avreage test loss and accuracy 
+    test_loss /= num_batches
+    correct /= size
+    print(f"TEST: Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+    
 
 
 def main():
+    
+    batch_size        = 64
+    hidden_features   = 64 
+    LSTM_layers       = 2 
+    output_size       = 2
+    epochs            = 50 
+    # [1,2,3] [2,3,4] [3,4,5]
+    window_size       = 10
     
     training_file, testing_file, params = parse_arguments(sys.argv)
 
@@ -131,34 +165,32 @@ def main():
     dimension = LogParser.one_hot_encoding(parser_train, parser_test)
 
     ## preapre
-    window_size       = 10
     # In preprocessor thre will be the dataset 
     preproces_train = Preproces(parser_train.all_logs, window_size)
+    preproces_test  = Preproces(parser_test.all_logs, window_size)
 
-    input_features    = preproces_train.features
-    batch_size        = 64
-    hidden_features   = 64 
-    LSTM_layers       = 2 
-    output_size       = 2
-    epochs            = 50 
+    train_input_features    = preproces_train.features
+    test_input_features     = preproces_test.features
     
-    data_loader = DataLoader(preproces_train.dataset, batch_size=batch_size, shuffle=False, drop_last=True) 
+    train_data_loader   = DataLoader(preproces_train.dataset, batch_size=batch_size, shuffle=False, drop_last=True) 
+    test_data_loader    = DataLoader(preproces_test.dataset, batch_size=batch_size, shuffle=False, drop_last=True) 
     
     # Instantiate the model
     # Input for LSTM 
     # (batch-size, timestamp, input_dim) 
-    model = DeepLog(input_features, LSTM_layers, hidden_features, output_size, batch_size)
+    model = DeepLog(train_input_features, LSTM_layers, hidden_features, output_size, batch_size)
     model.to(device)
 
      
     loss = nn.CrossEntropyLoss()
-    # todo maybe add constant like 1r=1e-3
+
+    # TODO maybe add constant like 1r=1e-3
     optimizer = optim.Adam(model.parameters())
 
     for ep in range(1, epochs+1):
 
-        train(data_loader, model, loss, optimizer)
-        
+        train(train_data_loader, model, loss, optimizer)
+        test(test_data_loader, model, loss) 
         
         print("ep: ", ep, "total epochs:", epochs)
 
