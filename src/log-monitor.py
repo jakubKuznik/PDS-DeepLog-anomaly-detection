@@ -82,17 +82,17 @@ def train(data_loader, model, loss_func, optimizer):
         
     model.train()
     # Iterate over the data loader
+    total_loss = 0.0 
+    size = len(data_loader.dataset)
+    num_batches = len(data_loader)
     for batch_data, batch_labels in data_loader:
-
         D, L = batch_data.to(device), batch_labels.to(device)
-
         # Pass the batch_data through the model
         # output is 64 x ([2])
         # [0.4123, 0.3214] normal probability and annomaly probability
         output = model(D)
-
         # Compute the binary cross-entropy loss
-        loss = loss_func(output, L)  # Squeeze the output to remove extra dimensions
+        loss = loss_func(output, L)  
 
         # Backpropagation
         loss.backward()
@@ -100,6 +100,13 @@ def train(data_loader, model, loss_func, optimizer):
         optimizer.step()
         
         optimizer.zero_grad()
+
+        total_loss += loss.item()
+
+    # Calculate average loss
+    average_loss = total_loss / num_batches
+    print("Training Loss:", average_loss)
+
 
 
 def test(dataloader, model, loss_fn):
@@ -110,51 +117,52 @@ def test(dataloader, model, loss_fn):
     ## same as we did model.train() 
     ##  This set model into the evaluation state 
     model.eval()
-    test_loss, anomaly_correct, anomaly_wrong, normal_correct, normal_wrong = 0, 0, 0, 0, 0
-    total_anomalies, total_normal = 0, 0
-    total = 0
-    correct = 0
+    test_loss, correct = 0, 0
     ## with torch.no_grad() disable gradient callculation for a testing 
     ##   so it will be faster 
+        
+    total_correct_normal = 0
+    total_correct_anomaly = 0
+    total_wrong_normal = 0
+    total_wrong_anomaly = 0
+    
     with torch.no_grad():
-        ## get X data and corresponding y label 
+    
         for X, y in dataloader:
             X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
-            
+        
+            # Convert probabilities to binary predictions
+            predicted = (pred > 0.5).float()  # Threshold at 0.5
+        
             # Count correct and wrong predictions
-            for i in range(len(y)):
-                total += 1
-                if y[i][0] == 1:
-                    total_anomalies += 1
-                    if pred[i][0] < pred[i][1]:
-                        anomaly_correct += 1
-                        correct += 1
-                    else:
-                        anomaly_wrong += 1
-                else:
-                    total_normal += 1
-                    if pred[i][0] >= pred[i][1]:
-                        normal_correct += 1
-                        correct += 1
-                    else:
-                        normal_wrong += 1
-
-    # calculating average test loss
-    test_loss /= num_batches
+            correct_normal = ((predicted == 0) & (y == 0)).sum().item()
+            correct_anomaly = ((predicted == 1) & (y == 1)).sum().item()
+            wrong_normal = ((predicted == 1) & (y == 0)).sum().item()
+            wrong_anomaly = ((predicted == 0) & (y == 1)).sum().item()
+        
+            # Tally the counts
+            total_correct_normal += correct_normal
+            total_correct_anomaly += correct_anomaly
+            total_wrong_normal += wrong_normal
+            total_wrong_anomaly += wrong_anomaly
     
-    # Print results
-    print(f"Test Error: \nAvg loss: {test_loss:>8f}")
-    print(f"Accuracy: {100 * (correct/total):.2f}%")
-    print(f"Anomaly (Class 1) Correct: {anomaly_correct}")
-    print(f"Anomaly (Class 1) Wrong: {anomaly_wrong}")
-    print(f"Anomaly (Class 1) Detection Accuracy: {100 * (anomaly_correct / (anomaly_correct + anomaly_wrong)):.2f}%")
-    print(f"Total Anomalies: {total_anomalies}")
-    print(f"Normal (Class 2) Correct: {normal_correct}")
-    print(f"Normal (Class 2) Wrong: {normal_wrong}")
-    print(f"Normal (Class 2) Detection Accuracy: {100 * (normal_correct / (normal_correct + normal_wrong)):.2f}%")
-    print(f"Total Normal Instances: {total_normal}")
+    accuracy_all = ((total_correct_normal + total_correct_anomaly) / size) * 100
+    accuracy_normal = (total_correct_normal / (total_correct_normal + total_wrong_normal)) * 100
+    accuracy_anomaly = (total_correct_anomaly / (total_correct_anomaly + total_wrong_anomaly)) * 100
+
+    # Print accuracy percentages
+    print("")
+    print("Overall Accuracy: {:.2f}%".format(accuracy_all))
+    print("Normal Accuracy: {:.2f}%".format(accuracy_normal))
+    print("Anomaly Accuracy: {:.2f}%".format(accuracy_anomaly))
+    
+    print("Correct normal predictions:", total_correct_normal)
+    print("Wrong normal predictions:", total_wrong_normal)
+    print("Correct anomaly predictions:", total_correct_anomaly)
+    print("Wrong anomaly predictions:", total_wrong_anomaly)
+    
 
 
 def main():
@@ -163,7 +171,7 @@ def main():
     hidden_features   = 64 
     LSTM_layers       = 2 
     output_size       = 2
-    epochs            = 100
+    epochs            = 1000
     # [1,2,3] [2,3,4] [3,4,5]
     window_size       = 10
     imbalance_factor = 5
@@ -211,7 +219,7 @@ def main():
 
     # Instantiate the loss function with class weights
     # CrossEntropyLoss automatically applies weights to each class
-    loss = nn.CrossEntropyLoss(weight=class_weights) 
+    loss = nn.BCEWithLogitsLoss() 
 
     # TODO maybe add constant like 1r=1e-3
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
@@ -223,7 +231,7 @@ def main():
 
         train(train_data_loader, model, loss, optimizer)
         
-        if ep % 10 == 0:         
+        if ep % 5 == 0:         
             test(test_data_loader, model, loss) 
         print("--------------------------------------")
         

@@ -62,11 +62,12 @@ class DeepLog(nn.Module):
       # fully connected linear layer 
       # It is great for finding some complex patterns in Data and reduce dimension
       # nn.Linear(512, 10) -> reduce dim from 512 -> 10 
-      self.linear     = nn.Linear(LSTM_hidden_features, output_size)
+      self.linear     = nn.Linear(LSTM_hidden_features, 1)
       # Soft max will be applied to the last dimension of input tensor (-1)
       #  We are using softmax because we want a probability of anomaly 
       
       self.softmax    = nn.LogSoftmax(dim=-1)
+      self.sigmoid    = nn.Sigmoid()
 
 
     def forward(self, input):
@@ -76,7 +77,7 @@ class DeepLog(nn.Module):
       out, _  = self.lstm(input, (h0, c0))
       out     = self.linear(out[:, -1, :])
       # out = F.log_softmax(out, dim=-1)  # Using F.log_softmax instead of nn.LogSoftmax
-      return torch.exp(out)  # Exponentiating to get probabilities
+      return self.sigmoid(out)  # Exponentiating to get probabilities
 
 
 
@@ -104,10 +105,11 @@ class Preproces():
       sequence = data[i:i+window_size]  # Extract a sequence of data points
       # check if there is an anomaly
       if any(labels[i:i+window_size]):
-        outputs.append([True,False])
+        outputs.append([True])
       else:
-        outputs.append([False,True])
+        outputs.append([False])
       sequences.append(sequence)
+
 
     self.data = np.array(sequences)
     self.labels = np.array(outputs)
