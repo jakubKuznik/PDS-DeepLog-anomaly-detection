@@ -25,6 +25,16 @@ import torch
 import torch.nn as nn 
 import torch.optim as optim 
 
+best_epoch = 0 
+best_acc = 0
+best_normal_acc = 0
+best_annom_acc = 0
+
+best_epoch_combined = 0 
+best_acc_combined = 0
+best_normal_acc_combined = 0
+best_annom_acc_combined = 0
+
 def help():
     print("log-monitor")
     print("     -training <file>")
@@ -79,7 +89,6 @@ def parse_arguments(argv):
 
 # train one epoch
 def train(data_loader, model, loss_func, optimizer):
-        
     model.train()
     # Iterate over the data loader
     total_loss = 0.0 
@@ -109,7 +118,12 @@ def train(data_loader, model, loss_func, optimizer):
 
 
 
-def test(dataloader, model, loss_fn):
+def test(dataloader, model, loss_fn, epoch):
+    
+    global best_epoch, best_acc, best_normal_acc, best_annom_acc 
+    global best_epoch_combined, best_acc_combined 
+    global best_normal_acc_combined, best_annom_acc_combined
+    
     # size of dataset 
     size = len(dataloader.dataset)
     ## how many batches are in the dataset 
@@ -151,6 +165,18 @@ def test(dataloader, model, loss_fn):
     accuracy_all = ((total_correct_normal + total_correct_anomaly) / size) * 100
     accuracy_normal = (total_correct_normal / (total_correct_normal + total_wrong_normal)) * 100
     accuracy_anomaly = (total_correct_anomaly / (total_correct_anomaly + total_wrong_anomaly)) * 100
+    
+    if accuracy_all > best_acc: 
+        best_acc = accuracy_all
+        best_annom_acc = accuracy_anomaly
+        best_epoch = epoch
+        best_normal_acc = accuracy_normal
+    
+    if (accuracy_anomaly + accuracy_normal) > (best_annom_acc_combined + best_normal_acc_combined):
+        best_epoch_combined = epoch
+        best_acc_combined = accuracy_all
+        best_annom_acc_combined = accuracy_anomaly
+        best_normal_acc_combined = accuracy_normal
 
     # Print accuracy percentages
     print("")
@@ -167,11 +193,15 @@ def test(dataloader, model, loss_fn):
 
 def main():
     
+    global best_epoch, best_acc, best_normal_acc, best_annom_acc 
+    global best_epoch_combined, best_acc_combined 
+    global best_normal_acc_combined, best_annom_acc_combined
+    
     batch_size        = 64
     hidden_features   = 64 
     LSTM_layers       = 2 
     output_size       = 2
-    epochs            = 1000
+    epochs            = 5000
     # [1,2,3] [2,3,4] [3,4,5]
     window_size       = 10
     imbalance_factor = 5
@@ -232,9 +262,18 @@ def main():
         train(train_data_loader, model, loss, optimizer)
         
         if ep % 5 == 0:         
-            test(test_data_loader, model, loss) 
+            test(test_data_loader, model, loss, ep) 
         print("--------------------------------------")
-        
+
+    print("BEST EPOCH:", best_epoch) 
+    print("Overall Accuracy: {:.2f}%".format(best_acc))
+    print("Normal Accuracy: {:.2f}%".format(best_normal_acc))
+    print("Anomaly Accuracy: {:.2f}%".format(best_annom_acc))
+    print("")
+    print("BEST overall epoch:", best_epoch_combined) 
+    print("Overall Accuracy: {:.2f}%".format(best_acc_combined))
+    print("Normal Accuracy: {:.2f}%".format(best_normal_acc_combined))
+    print("Anomaly Accuracy: {:.2f}%".format(best_annom_acc_combined))
 
 if __name__ == "__main__":
     main()
