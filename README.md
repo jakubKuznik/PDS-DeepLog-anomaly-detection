@@ -28,8 +28,8 @@ Measured evaluation:
 ```python3 src/log-monitor.py -training logs/test-1-test.log -testing logs/test-1-train.log```   
 
 Usefull commands:   
-```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log)```
-```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log | head -n 50000)```
+```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log)```  
+```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log | head -n 50000)```  
 
 
 ### Setting up Python Environment  
