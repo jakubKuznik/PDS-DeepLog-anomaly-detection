@@ -24,15 +24,17 @@ Login: xkuzni04
 ```pip3 install -r requirements.txt```  
 
 ## Execution
-Measured evaluation:   
-```python3 src/log-monitor.py -training logs/test-1-test.log -testing logs/test-1-train.log```   
+Measured evaluation:  
+```python3 src/log-monitor.py -training logs/small-HDFS-annotate.log -testing logs/test-1-test.log```
 
 Usefull commands:   
 ```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log)```  
 ```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log | head -n 50000)```  
 
+## Log preprocesing
+firstly we need to  use the `src/annotation/annotate.py` to change random numbers to the `Normal` and `Anomaly` keywords.
 
-### Setting up Python Environment  
+## Setting up Python Environment  
 - Create a Python virtual environment in the current folder:  
    ```python -m venv .``` 
 - Activate the venv:  
