@@ -181,8 +181,8 @@ def test(dataloader, model, loss_fn, epoch):
     # Print accuracy percentages
     print("")
     print("Overall Accuracy: {:.2f}%".format(accuracy_all))
-    print("Normal Accuracy: {:.2f}%".format(accuracy_normal))
-    print("Anomaly Accuracy: {:.2f}%".format(accuracy_anomaly))
+    print("Normal Communication Detection Accuracy: {:.2f}%".format(accuracy_normal))
+    print("Anomaly Detection Accuracy: {:.2f}%".format(accuracy_anomaly))
     
     print("Correct normal predictions:", total_correct_normal)
     print("Wrong normal predictions:", total_wrong_normal)
@@ -267,13 +267,13 @@ def main():
 
     print("BEST EPOCH:", best_epoch) 
     print("Overall Accuracy: {:.2f}%".format(best_acc))
-    print("Normal Accuracy: {:.2f}%".format(best_normal_acc))
-    print("Anomaly Accuracy: {:.2f}%".format(best_annom_acc))
+    print("Normal comunication detection Accuracy: {:.2f}%".format(best_normal_acc))
+    print("Anomaly detection Accuracy: {:.2f}%".format(best_annom_acc))
     print("")
     print("BEST overall epoch:", best_epoch_combined) 
     print("Overall Accuracy: {:.2f}%".format(best_acc_combined))
-    print("Normal Accuracy: {:.2f}%".format(best_normal_acc_combined))
-    print("Anomaly Accuracy: {:.2f}%".format(best_annom_acc_combined))
+    print("Normal comunication detection Accuracy: {:.2f}%".format(best_normal_acc_combined))
+    print("Anomaly detection Accuracy: {:.2f}%".format(best_annom_acc_combined))
 
 if __name__ == "__main__":
     main()
