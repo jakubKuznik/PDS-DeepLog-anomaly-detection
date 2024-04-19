@@ -21,13 +21,17 @@ Login: xkuzni04
 | src/annotation/* | Script for data anotation |   
     
 ## Instal Dependencies
-```pip3 install -r requirements.txt```  
+```make install```  
+or  
+```pip3 install -r requirements.txt```
 
 ## Execution
-Measured evaluation:  
+```make run```
+or  
 ```python3 src/log-monitor.py -training logs/small-HDFS-annotate.log -testing logs/test-1-test.log```
 
-Usefull commands:   
+
+## Usefull commands:   
 ```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log)```  
 ```python3 src/log-monitor.py -training <(head -n 50000 logs/HDFS-annotate.log) -testing <(tail -n +50001 logs/HDFS-annotate.log | head -n 50000)```  
 
